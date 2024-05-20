@@ -27,8 +27,10 @@ def move_file(args,source_file, destination_dir):
         # Move the file
         shutil.move(source_file, destination_dir)
         print(f"File '{source_file}' has been moved to '{destination_dir}'.")
+        return 1
     except Exception as e:
         print(f"An error occurred: {e}")
+        return 0
  
 def imgDate(fn):
     "returns the image date from image (if available)\nfrom Orthallelous"
