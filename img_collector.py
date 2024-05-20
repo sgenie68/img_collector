@@ -39,7 +39,11 @@ def imgDate(fn):
     tags = [(36867, 37521),  # (DateTimeOriginal, SubsecTimeOriginal)
             (36868, 37522),  # (DateTimeDigitized, SubsecTimeDigitized)
             (306, 37520), ]  # (DateTime, SubsecTime)
-    exif = Image.open(fn)._getexif()
+
+    try:
+        exif = Image.open(fn)._getexif()
+    except Exception as e:
+        return None
  
     if not exif:
         return None
@@ -88,11 +92,9 @@ def process_file(args,path,name,date,outp):
     modification_time = time.localtime(date)
     dirname=""
     if args.hierarchy:
-        dirname=str(modification_time.tm_year)
-        dirname+="/"+str(modification_time.tm_mon)
-        dirname+="/"+str(modification_time.tm_mday)
+        dirname=f"{modification_time.tm_year:04d}/{modification_time.tm_mon:02d}/{modification_time.tm_mday:02d}"
     else:
-        dirname=str(modification_time.tm_year)+"-"+str(modification_time.tm_mon)+"-"+str(modification_time.tm_mday)
+        dirname=f"{modification_time.tm_year:04d}-{modification_time.tm_mon:02d}-{modification_time.tm_mday:02d}"
     dest=outp+dirname+"/"
     os.makedirs(dest, exist_ok=True)
     if not dest in directories:
