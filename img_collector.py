@@ -8,7 +8,6 @@ import platform
 import shutil
 import time
 
-
 directories=[]
 
 def move_file(args,source_file, destination_dir):
