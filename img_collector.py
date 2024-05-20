@@ -5,6 +5,30 @@ import random
 import argparse
 import os
 import platform
+import shutil
+import time
+
+
+directories=[]
+
+def move_file(args,source_file, destination_dir):
+    """
+    Move a file to another directory.
+
+    Parameters:
+    source_file (str): The path to the file to be moved.
+    destination_dir (str): The directory where the file should be moved.
+    """
+    try:
+        # Ensure the destination directory exists
+        if not os.path.exists(destination_dir):
+            os.makedirs(destination_dir)
+
+        # Move the file
+        shutil.move(source_file, destination_dir)
+        print(f"File '{source_file}' has been moved to '{destination_dir}'.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
  
 def imgDate(fn):
     "returns the image date from image (if available)\nfrom Orthallelous"
@@ -29,8 +53,7 @@ def imgDate(fn):
     if dat == None: return None
     full = '{}.{}'.format(dat, sub)
     T = datetime.strptime(full, std_fmt)
-    #T = time.mktime(time.strptime(dat, '%Y:%m:%d %H:%M:%S')) + float('0.%s' % sub)
-    return T
+    return T.timestamp()
 
 def creation_date(fn):
     """
@@ -58,29 +81,58 @@ def get_file_time(fn):
 
     return t
 
+def process_file(args,path,name,date,outp):
+    global directoris
+    modification_time = time.localtime(date)
+    dirname=""
+    if args.hierarchy:
+        dirname=str(modification_time.tm_year)
+        dirname+="/"+str(modification_time.tm_mon)
+        dirname+="/"+str(modification_time.tm_mday)
+    else:
+        dirname=str(modification_time.tm_year)+"-"+str(modification_time.tm_mon)+"-"+str(modification_time.tm_mday)
+    dest=outp+dirname+"/"
+    os.makedirs(dest, exist_ok=True)
+    if not dest in directories:
+        directories.append(dest)
+    move_file(args,path,dest)
+        
+def check_tail(string, suffixes):
+    # Convert the suffixes to lowercase
+    suffixes_lower = tuple(suffix.lower() for suffix in suffixes)
+    
+    # Check if the string ends with any of the suffixes (case-insensitive)
+    result = string.lower().endswith(suffixes_lower)
+    
+    return result
+
 def process_directory(args,inp,out):
     if not os.path.isfile(inp):
+        if inp[-1]!='/' and inp[-1]!='//':
+            inp+="/"
         print(f"Directory: {inp}")
-        for root, dirs, files in os.walk(inp):
-            for name in dirs:
+        if inp in directories:
+            return
+        for name in os.listdir(inp):
+            path = os.path.join(inp, name)
+            if not os.path.isfile(path):
                 if name[0]!='.' or args.hidden:
-                    dir_path = os.path.join(root, name)
-                    print("* ",dir_path)
                     if not args.norecurse:
-                        process_directory(args,dir_path,out)
+                        process_directory(args,path,out)
 
-            for name in files:
-                file_path = os.path.join(root, name)
+            else:
                 if name[0]=='.' and not args.hidden:
                     continue
-                if file_path.endswith("jpeg"):
-                    t=get_file_time(file_path)
-                    print(f"File: {file_path}: {t}")
+                if check_tail(name,{".jpg",".jpeg",".png",".heic",".gif",".webp"}):
+                    t=get_file_time(path)
+                    process_file(args,path,name,t,out)
 
 def main(args):
     inp_dir=args.input
     out_dir=args.output
 
+    if out_dir[-1]!='/' and out_dir[-1]!='//':
+        out_dir+="/"
     process_directory(args,inp_dir,out_dir)
 
 if __name__=="__main__":
@@ -89,6 +141,7 @@ if __name__=="__main__":
     parser.add_argument('--output', '-o', required=False, dest='output', type=str, default='./', help='Output directory')
     parser.add_argument("--norecurse",'-n',dest="norecurse",action='store_true',help="Do not traverse recursievely")
     parser.add_argument("--hidden",'-d',dest="hidden",action='store_true',help="Process hidden files and directories")
+    parser.add_argument("--hierarchy",'-a',dest="hierarchy",action='store_true',help="Process hidden files and directories")
     args = parser.parse_args()
     try:
         main(args)
