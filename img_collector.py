@@ -87,7 +87,7 @@ def get_file_time(fn):
     return t
 
 def process_file(args,path,name,date,outp):
-    global directoris
+    global directories
     modification_time = time.localtime(date)
     dirname=""
     if args.hierarchy:
